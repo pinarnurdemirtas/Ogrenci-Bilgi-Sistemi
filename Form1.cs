@@ -15,6 +15,8 @@ namespace WindowsFormsApp2
 			AddPlaceholderText();
 			InitializeListView(); // ListView'i başlat
 			ApplyCustomStyles();  // Özelleştirilmiş tasarımı uygula
+			txtArama.TextChanged += TxtArama_TextChanged; // Arama metin kutusuna olay bağla
+			txtArama.Leave += TxtArama_Leave; // Arama kutusunun Leave olayına olay bağla
 		}
 
 		private void Form1_Load(object sender, EventArgs e)
@@ -25,7 +27,6 @@ namespace WindowsFormsApp2
 		protected override void OnShown(EventArgs e)
 		{
 			base.OnShown(e);
-			// No control will be focused
 			this.ActiveControl = null;
 		}
 
@@ -42,31 +43,29 @@ namespace WindowsFormsApp2
 			lstOgrenciListesi.FullRowSelect = true;
 			lstOgrenciListesi.GridLines = true;
 
-			// Attach the event handler
 			lstOgrenciListesi.SelectedIndexChanged += new System.EventHandler(this.lstOgrenciListesi_SelectedIndexChanged);
 		}
 
 		private void ApplyCustomStyles()
 		{
 			// Form renkleri
-			this.BackColor = Color.FromArgb(243, 238, 245);  // Hafif pastel arka plan
+			this.BackColor = Color.FromArgb(243, 238, 245);  
 			this.Font = new Font("Segoe UI", 10);
 
 			// ListView başlıkları için stil
-			lstOgrenciListesi.OwnerDraw = true; // Elle çizim moduna geçiyoruz
+			lstOgrenciListesi.OwnerDraw = true;
 			lstOgrenciListesi.DrawColumnHeader += (sender, e) =>
 			{
-				// Başlık için rengi ve yazı stilini ayarlıyoruz
-				e.Graphics.FillRectangle(Brushes.LightGray, e.Bounds); // Başlık arka plan rengi
-				e.Graphics.DrawString(e.Header.Text, this.Font, Brushes.Black, e.Bounds); // Yazı rengi
+				e.Graphics.FillRectangle(Brushes.LightGray, e.Bounds); 
+				e.Graphics.DrawString(e.Header.Text, this.Font, Brushes.Black, e.Bounds); 
 			};
 
 			lstOgrenciListesi.DrawItem += (sender, e) => e.DrawDefault = true;  // Varsayılan liste öğesi stili
 
 			// Buton tasarımları
-			StyleButton(btnVerEkle, Color.FromArgb(60, 179, 113));  // Yeşilimsi renk
-			StyleButton(btnVerSil, Color.FromArgb(255, 59, 59));    // Kırmızımsı renk
-			StyleButton(btnVerGuncelle, Color.FromArgb(74, 127, 188));  // Mavimsi renk
+			StyleButton(btnVerEkle, Color.FromArgb(60, 179, 113));
+			StyleButton(btnVerSil, Color.FromArgb(255, 59, 59));
+			StyleButton(btnVerGuncelle, Color.FromArgb(74, 127, 188));
 		}
 
 		private void StyleButton(Button button, Color backgroundColor)
@@ -120,11 +119,12 @@ namespace WindowsFormsApp2
 			SetPlaceholderText(txtOkulNo, "Okul No");
 			SetPlaceholderText(txtSinavNotu, "Sınav Notu");
 			SetPlaceholderText(txtBolum, "Bölüm");
+			SetPlaceholderText(txtArama, "Öğrenci ismi ara");
 		}
 
 		private void SetPlaceholderText(TextBox textBox, string placeholder)
 		{
-			textBox.ForeColor = Color.Gray; // Yer tutucu rengi
+			textBox.ForeColor = Color.Gray;
 			textBox.Text = placeholder;
 
 			textBox.Enter += (s, e) =>
@@ -132,7 +132,7 @@ namespace WindowsFormsApp2
 				if (textBox.Text == placeholder)
 				{
 					textBox.Text = "";
-					textBox.ForeColor = Color.Black; // Metin rengi
+					textBox.ForeColor = Color.Black;
 				}
 			};
 
@@ -141,7 +141,7 @@ namespace WindowsFormsApp2
 				if (string.IsNullOrWhiteSpace(textBox.Text))
 				{
 					textBox.Text = placeholder;
-					textBox.ForeColor = Color.Gray; // Yer tutucu rengi
+					textBox.ForeColor = Color.Gray; 
 				}
 			};
 		}
@@ -229,7 +229,7 @@ namespace WindowsFormsApp2
 					string query = "UPDATE ogrenciler SET Isim = @isim, Okul_no = @okul_no, Sinav_notu = @sinav_notu, Bolum = @bolum WHERE ID = @id";
 					MySqlCommand cmd = new MySqlCommand(query, con);
 					cmd.Parameters.AddWithValue("@id", id); // Güncellenecek kaydı belirlemek için ID'yi kullan
-					cmd.Parameters.AddWithValue("@isim", txtIsim.Text); // İsim parametresi
+					cmd.Parameters.AddWithValue("@isim", txtIsim.Text);
 					cmd.Parameters.AddWithValue("@okul_no", txtOkulNo.Text);
 					cmd.Parameters.AddWithValue("@sinav_notu", txtSinavNotu.Text.Replace(',', '.'));
 					cmd.Parameters.AddWithValue("@bolum", txtBolum.Text);
@@ -261,18 +261,66 @@ namespace WindowsFormsApp2
 			}
 		}
 
-
-
-
 		private void lstOgrenciListesi_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (lstOgrenciListesi.SelectedItems.Count > 0)
 			{
-				ListViewItem selectedItem = lstOgrenciListesi.SelectedItems[0]; // Get the selected item
-				txtIsim.Text = selectedItem.SubItems[1].Text; // Set the name
-				txtOkulNo.Text = selectedItem.SubItems[2].Text; // Set the school number
-				txtSinavNotu.Text = selectedItem.SubItems[3].Text; // Set the exam score
-				txtBolum.Text = selectedItem.SubItems[4].Text; // Set the department
+				ListViewItem selectedItem = lstOgrenciListesi.SelectedItems[0];
+				txtIsim.Text = selectedItem.SubItems[1].Text;
+				txtOkulNo.Text = selectedItem.SubItems[2].Text;
+				txtSinavNotu.Text = selectedItem.SubItems[3].Text;
+				txtBolum.Text = selectedItem.SubItems[4].Text;
+			}
+		}
+
+		private void TxtArama_TextChanged(object sender, EventArgs e)
+		{
+			SearchStudent(); // Arama işlemini başlat
+		}
+
+		private void TxtArama_Leave(object sender, EventArgs e)
+		{
+			LoadStudentData(); // Listeyi eski haline döndür
+		}
+
+		private void SearchStudent()
+		{
+			string searchTerm = txtArama.Text.Trim(); // Arama terimini al
+
+			try
+			{
+				if (con.State == System.Data.ConnectionState.Closed)
+					con.Open();
+
+				// Arama sorgusu
+				string query = "SELECT ID, Isim, Okul_no, Sinav_notu, Bolum FROM ogrenciler WHERE Isim LIKE @searchTerm";
+				MySqlCommand cmd = new MySqlCommand(query, con);
+				cmd.Parameters.AddWithValue("@searchTerm", "%" + searchTerm + "%");
+
+				MySqlDataReader reader = cmd.ExecuteReader();
+
+				lstOgrenciListesi.Items.Clear(); // Mevcut öğeleri temizle
+
+				while (reader.Read())
+				{
+					ListViewItem item = new ListViewItem(reader["ID"].ToString());
+					item.SubItems.Add(reader["Isim"].ToString());
+					item.SubItems.Add(reader["Okul_no"].ToString());
+					item.SubItems.Add(reader["Sinav_notu"].ToString());
+					item.SubItems.Add(reader["Bolum"].ToString());
+					lstOgrenciListesi.Items.Add(item); // Öğeyi ListView'e ekle
+				}
+
+				reader.Close();
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Hata: " + ex.Message);
+			}
+			finally
+			{
+				if (con.State == System.Data.ConnectionState.Open)
+					con.Close();
 			}
 		}
 	}

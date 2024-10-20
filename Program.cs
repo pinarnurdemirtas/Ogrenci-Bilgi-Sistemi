@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using WindowsFormsApp2;
 
-namespace WindowsFormsApp3 // Burayı kontrol et, Form1'in bulunduğu namespace ile aynı olmalı
+namespace WindowsFormsApp3 
 {
 	static class Program
 	{
@@ -11,7 +11,7 @@ namespace WindowsFormsApp3 // Burayı kontrol et, Form1'in bulunduğu namespace 
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new Form1()); // Burada Form1'in doğru bir şekilde çağrıldığından emin ol
+			Application.Run(new Form1()); // Form1'in çağrıldığı yer
 		}
 	}
 }
